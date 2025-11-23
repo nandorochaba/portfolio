@@ -6,11 +6,11 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-//  usar o ultramsg caro que só a desgraça
+// UltraMsg
 const INSTANCE_ID = "instance151971";
 const TOKEN = "7f86bdkx451gceyu";
 
-// rota pra receber mensagem
+// Rota para enviar mensagem
 app.post("/send", async (req, res) => {
     const { name, email, message } = req.body;
 
@@ -19,19 +19,18 @@ app.post("/send", async (req, res) => {
     }
 
     const texto = `
-📩 *Novo contato pelo site*  
---------------------------------  
-👤 Nome: ${name}  
-📧 Email: ${email}  
-💬 Mensagem: ${message}  
+📩 *Novo contato pelo site*
+--------------------------------
+👤 Nome: ${name}
+📧 Email: ${email}
+💬 Mensagem: ${message}
     `;
 
     try {
         const response = await axios.post(
-            `https://api.ultramsg.com/instance151971/`,
+            `https://api.ultramsg.com/${INSTANCE_ID}/messages/chat?token=${TOKEN}`,
             {
-                token: TOKEN,
-                to: "5598984658525", // <-- whatsapp
+                to: "5598984658525", // seu WhatsApp
                 body: texto
             }
         );
@@ -43,7 +42,7 @@ app.post("/send", async (req, res) => {
     }
 });
 
-//  iniciar servidor
+// Iniciar servidor
 app.listen(3000, () => {
     console.log("Servidor rodando em http://localhost:3000");
 });
