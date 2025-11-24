@@ -1,52 +1,161 @@
-const express = require("express");
-const axios = require("axios");
-const cors = require("cors");
-const app = express();
+'use strict';
 
-app.use(express.json());
-app.use(cors());
+//Opening or closing side bar
 
-// UltraMsg
-const INSTANCE_ID = "instance151971";
-const TOKEN = "7f86bdkx451gceyu";
+const elementToggleFunc = function (elem) { elem.classList.toggle("active"); }
 
-// Rota para enviar mensagem
-app.post("/send", async (req, res) => {
-    const { name, email, message } = req.body;
+const sidebar = document.querySelector("[data-sidebar]");
+const sidebarBtn = document.querySelector("[data-sidebar-btn]");
 
-    if (!name || !email || !message) {
-        return res.status(400).json({ error: "Campos incompletos" });
+sidebarBtn.addEventListener("click", function() {elementToggleFunc(sidebar); })
+
+//Activating Modal-testimonial
+
+const testimonialsItem = document.querySelectorAll('[data-testimonials-item]');
+const modalContainer = document.querySelector('[data-modal-container]');
+const modalCloseBtn = document.querySelector('[data-modal-close-btn]');
+const overlay = document.querySelector('[data-overlay]');
+
+const modalImg = document.querySelector('[data-modal-img]');
+const modalTitle = document.querySelector('[data-modal-title]');
+const modalText = document.querySelector('[data-modal-text]');
+
+const testimonialsModalFunc = function () {
+    modalContainer.classList.toggle('active');
+    overlay.classList.toggle('active');
+}
+
+for (let i = 0; i < testimonialsItem.length; i++) {
+    testimonialsItem[i].addEventListener('click', function () {
+        modalImg.src = this.querySelector('[data-testimonials-avatar]').src;
+        modalImg.alt = this.querySelector('[data-testimonials-avatar]').alt;
+        modalTitle.innerHTML = this.querySelector('[data-testimonials-title]').innerHTML;
+        modalText.innerHTML = this.querySelector('[data-testimonials-text]').innerHTML;
+
+        testimonialsModalFunc();
+    })
+}
+
+//Activating close button in modal-testimonial
+
+modalCloseBtn.addEventListener('click', testimonialsModalFunc);
+overlay.addEventListener('click', testimonialsModalFunc);
+
+//Activating Filter Select and filtering options
+
+const select = document.querySelector('[data-select]');
+const selectItems = document.querySelectorAll('[data-select-item]');
+const selectValue = document.querySelector('[data-select-value]');
+const filterBtn = document.querySelectorAll('[data-filter-btn]');
+
+select.addEventListener('click', function () {elementToggleFunc(this); });
+
+for(let i = 0; i < selectItems.length; i++) {
+    selectItems[i].addEventListener('click', function() {
+
+        let selectedValue = this.innerText.toLowerCase();
+        selectValue.innerText = this.innerText;
+        elementToggleFunc(select);
+        filterFunc(selectedValue);
+
+    });
+}
+
+const filterItems = document.querySelectorAll('[data-filter-item]');
+
+const filterFunc = function (selectedValue) {
+    for(let i = 0; i < filterItems.length; i++) {
+        if(selectedValue == "all") {
+            filterItems[i].classList.add('active');
+        } else if (selectedValue == filterItems[i].dataset.category) {
+            filterItems[i].classList.add('active');
+        } else {
+            filterItems[i].classList.remove('active');
+        }
     }
+}
 
-    const texto = `
-📩 *Novo contato pelo site*
---------------------------------
-👤 Nome: ${name}
-📧 Email: ${email}
-💬 Mensagem: ${message}
-    `;
+//Enabling filter button for larger screens 
+
+let lastClickedBtn = filterBtn[0];
+
+for (let i = 0; i < filterBtn.length; i++) {
+    
+    filterBtn[i].addEventListener('click', function() {
+
+        let selectedValue = this.innerText.toLowerCase();
+        selectValue.innerText = this.innerText;
+        filterFunc(selectedValue);
+
+        lastClickedBtn.classList.remove('active');
+        this.classList.add('active');
+        lastClickedBtn = this;
+
+    })
+}
+
+// Enabling Contact Form
+
+const form = document.querySelector('[data-form]');
+const formInputs = document.querySelectorAll('[data-form-input]');
+const formBtn = document.querySelector('[data-form-btn]');
+
+for(let i = 0; i < formInputs.length; i++) {
+    formInputs[i].addEventListener('input', function () {
+        if(form.checkValidity()) {
+            formBtn.removeAttribute('disabled');
+        } else { 
+            formBtn.setAttribute('disabled', '');
+        }
+    })
+}
+
+// Enabling Page Navigation 
+
+const navigationLinks = document.querySelectorAll('[data-nav-link]');
+const pages = document.querySelectorAll('[data-page]');
+
+for(let i = 0; i < navigationLinks.length; i++) {
+    navigationLinks[i].addEventListener('click', function() {
+        
+        for(let i = 0; i < pages.length; i++) {
+            if(this.innerHTML.toLowerCase() == pages[i].dataset.page) {
+                pages[i].classList.add('active');
+                navigationLinks[i].classList.add('active');
+                window.scrollTo(0, 0);
+            } else {
+                pages[i].classList.remove('active');
+                navigationLinks[i]. classList.remove('active');
+            }
+        }
+    });
+}
+document.getElementById("contactForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const fullname = document.getElementById("fullname").value;
+    const email = document.getElementById("email").value;
+    const message = document.getElementById("message").value;
+
+    const data = { name: fullname, email, message };
 
     try {
-        const response = await axios.post(
-            `https://api.ultramsg.com/${INSTANCE_ID}/messages/chat?token=${TOKEN}`,
-            {
-                to: "5598984658525", // seu WhatsApp
-                body: texto
-            }
-        );
+        const response = await fetch("https://portfolio-production-69b3.up.railway.app/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
 
-        res.json({ success: true, data: response.data });
-    } catch (error) {
-        console.log(error.response?.data || error);
-        res.status(500).json({ error: "Erro ao enviar mensagem" });
+        const result = await response.json();
+
+        if (result.success) {
+            alert("Mensagem enviada com sucesso para o WhatsApp!");
+        } else {
+            alert("Erro ao enviar. Tente novamente.");
+        }
+
+    } catch (err) {
+        alert("Falha ao conectar com o servidor.");
+        console.error(err);
     }
 });
-
-// Iniciar servidor
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
-});
-
-
